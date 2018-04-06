@@ -1,22 +1,12 @@
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.svm import SVC
-
+from sklearn.svm import SVR
+from vectorize_data import master_function as get_data
 def run_model():
-    twenty_train = fetch_20newsgroups(subset='train', shuffle=True)
-    twenty_test = fetch_20newsgroups(subset='test', shuffle=True)
-
-    count_vect = CountVectorizer()
-    x_train = count_vect.fit_transform(twenty_train.data)
-    print len(twenty_train.data), x_train.shape
-    x_test = count_vect.transform(twenty_test.data)
-
-    # print len(twenty_train.target)
-    # print len(twenty_test.target)
-
-    # clf = SVC()
-    # clf.fit(x_train, twenty_train.target)
-    # print clf.score(x_test, twenty_test.target)
+    x_train, x_test, y_train, y_test = get_data()
+    clf = SVR()
+    clf.fit(x_train, y_train)
+    print clf.score(x_test, y_test)
 
 if __name__ == "__main__":
     run_model()
