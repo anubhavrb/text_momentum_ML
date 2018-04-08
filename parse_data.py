@@ -35,7 +35,7 @@ def get_moreover_articles(base = './data/moreover'):
     df = pd.DataFrame(matched_articles,
         columns=['title', 'content', 'author_name', 'source_name', 'momentum'])
     print df.describe()
-    df.to_csv('./data/moreover.csv', encoding='utf-8')
+    df.to_csv('./data/moreover.csv', index = False, encoding='utf-8')
     return df
 
 def moreover_momentum_map():
@@ -65,7 +65,7 @@ def get_opoint_articles(base = './data/opoint'):
                 # for each article check match
                 for article in articles:
                     a_id = "%d_%d" % (article['id_site'],article['id_article'])
-                    if a_id in momentum_map:
+                    if (a_id in momentum_map):
                         m = momentum_map[a_id]
                         row = [article['header']['text'], article['summary']['text'],
                                 article['body']['text'], article['first_source']['name'],m]
@@ -76,7 +76,7 @@ def get_opoint_articles(base = './data/opoint'):
     df = pd.DataFrame(matched_articles,
         columns=['header_text', 'summary_text', 'body_text', 'firstSource_name', 'momentum'])
     print df.describe()
-    df.to_csv('./data/opoint.csv', encoding='utf-8')
+    df.to_csv('./data/opoint.csv', index = False, encoding='utf-8')
     return df
 
 def main():
