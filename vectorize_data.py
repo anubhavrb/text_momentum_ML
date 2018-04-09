@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer as TF
 
 def read_data(fn = "./data/opoint.csv"):
-    df = pd.read_csv(fn, sep = ',')
+    df = pd.read_csv(fn, sep = ';')
     return df
 
 def split_data(df):

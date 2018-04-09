@@ -2,23 +2,24 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 import json
 import gzip as G
-import os,re,sys
+import os,re,sys,time
 import multiprocessing as mp
 
-def extract_match_moreover(files,basePath,momentum_map,output):
+def extract_match_moreover(raw_xmls,momentum_map,output,index):
     matches = []
-    for zip_file in files:
-        with G.open(basePath+'/'+zip_file) as file_ref:
-            articles = ET.fromstring(file_ref.read()).find('articles')
-            # for each article check match
-            for article in articles:
-                a_id = int(article.find('id').text.strip())
-                if a_id in momentum_map:
-                    m = momentum_map[a_id]
-                    row = [article.find('title').text,article.find('content').text,
-                            article.find('author')[0].text, article.find('source')[0].text,m]
-                    matches.append(row)
-    output.put(matches)
+    for str_xml in raw_xmls:
+        articles = ET.fromstring(str_xml).find('articles')
+        for article in articles:
+            a_id = int(article.find('id').text.strip())
+            if a_id in momentum_map:
+                m = momentum_map[a_id]
+                row = [article.find('title').text,article.find('content').text,
+                        article.find('author')[0].text, article.find('source')[0].text,m]
+                matches.append(row)
+    output.append(matches)
+    print "Process #%2d is Done! Found %d matches" % (index,len(matches))
+    return 
+    
 
 def get_files_in(dir):
     files = os.listdir(dir)
@@ -33,34 +34,43 @@ def get_moreover_articles(base = './data/moreover', threadCount = 8):
     # title, content, author_name, source_name, momentum
     # article -> id
     momentum_map = moreover_momentum_map()
-    files = get_files_in(base)[:500]
+    files = get_files_in(base)
+    print "Reading all zips..."
+    start = time.time()
+    raw_xmls = []
+    for zip_file in files:
+        with G.open(base+'/'+zip_file) as file_ref:
+            raw_xmls.append(file_ref.read())
+    print "Done. Total time taken: %.4f sec" % (time.time()-start)        
     processes = []
-    load = len(files)/threadCount
+    load = len(raw_xmls)/threadCount
     print "Load size: ",load
-    output = mp.Queue()
-    for i in range(threadCount):
-        p = mp.Process(target = extract_match_moreover,
-                     args = (files[i*load : (i+1)*load], base,momentum_map,output,))
-        processes.append(p)
-        p.start()
+    with mp.Manager() as manager:
+        output = manager.list()
+        for i in range(threadCount):
+            p = mp.Process(target = extract_match_moreover,
+                         args = (raw_xmls[i*load : (i+1)*load],momentum_map,output,i))
+            processes.append(p)
+            p.start()
+            
+            
+        processes.append(mp.Process(target = extract_match_moreover,
+                        args = (raw_xmls[threadCount*load : ],momentum_map,output,threadCount)))
+        processes[-1].start()
         
+        # Wait for all to finish
+        for p in processes:
+            p.join()
+            
+        # compile final data
+        matched_articles = []
+        for i in range(threadCount+1):
+                matched_articles += output[i]
         
-    processes.append(mp.Process(target = extract_match_moreover,
-                    args = (files[threadCount*load : ], base,momentum_map,output,)))
-    processes[-1].start()
-    # wait for all to finish:
-    for p in processes:
-        p.join()
-    
-    # compile final data
-    matched_articles = []
-    for p in processes:
-            matched_articles += output.get()
-    
     df = pd.DataFrame(matched_articles,
         columns=['title', 'content', 'author_name', 'source_name', 'momentum'])
     print df.describe()
-    df.to_csv('./data/moreover.csv', index = False, encoding='utf-8')
+    df.to_csv('./data/moreover.csv', index = False, encoding='utf-8', sep=';')
     return df
 
 def moreover_momentum_map():
@@ -103,8 +113,9 @@ def get_opoint_articles(base = './data/opoint'):
     df = pd.DataFrame(matched_articles,
         columns=['header_text', 'summary_text', 'body_text', 'firstSource_name', 'momentum'])
     print df.describe()
-    df.to_csv('./data/opoint.csv', index = False, encoding='utf-8')
+    df.to_csv('./data/opoint.csv', index = False, encoding='utf-8', sep = ";")
     return df
 
 if __name__ == '__main__':
-    get_moreover_articles(threadCount = int(sys.argv[1]))
+    get_opoint_articles()
+    #get_moreover_articles(threadCount = int(sys.argv[1]))
