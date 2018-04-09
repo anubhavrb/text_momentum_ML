@@ -12,7 +12,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 def run_model():
     x_train, x_test, y_train, y_test = get_data(10000)
-    clf = KNeighborsRegressor()
+    clf = DecisionTreeRegressor()
     clf.fit(x_train, y_train)
     print clf.score(x_test, y_test)
 

@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer as TF
 
-def read_data(fn = "./data/opoint.csv"):
+def read_data(fn = "./data/moreover.csv"):
     df = pd.read_csv(fn, sep = ';')
     return df
 
@@ -27,8 +27,8 @@ def get_data(feature_count = 10000):
     df = df[df.momentum.notnull()]
     df = df.fillna("")
     x_train, x_test, y_train, y_test = split_data(df)
-    x_train, x_test = vectorize_text(x_train['header_text'], 
-                                     x_test['header_text'],feature_count)
+    x_train, x_test = vectorize_text(x_train['title'], 
+                                     x_test['title'],feature_count)
 
     return x_train, x_test, y_train, y_test
 
