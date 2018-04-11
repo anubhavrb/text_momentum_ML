@@ -5,9 +5,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer as TF
 
 MOREOVER = "./data/moreover.csv"
 OPOINT = "./data/opoint.csv"
+COMBINED = "./data/combined.csv"
 
 def read_data(choice):
-    fn = MOREOVER if choice==1 else OPOINT
+    fn = OPOINT if choice==0 else (MOREOVER if choice==1 else COMBINED)
     df = pd.read_csv(fn, sep = ';')
     return df
 
@@ -18,31 +19,53 @@ def split_data(df):
     return x_train, x_test, y_train, y_test
 
 def vectorize_text(x_train, x_test, feature_count):
-    vectorizer = CV(strip_accents='unicode', analyzer = 'word',
+    vectorizer = TF(strip_accents='unicode', analyzer = 'word',
                                     max_features = feature_count)
+
     text_train = vectorizer.fit_transform(x_train).toarray()
     text_test = vectorizer.transform(x_test).toarray()
     text_train,text_test = pd.DataFrame(text_train),pd.DataFrame(text_test)
 
     return text_train, text_test
 
+def remove_duplicates():
+    df = read_data(0)
+    df = df[df.momentum.notnull()]
+    df = df.fillna("")
+    df = df.drop_duplicates(subset=["header_text","body_text",'momentum'], keep=False)
+    df.to_csv(OPOINT, index = False, encoding='utf-8', sep = ";")
+
+    df = read_data(1)
+    df = df[df.momentum.notnull()]
+    df = df.fillna("")
+    df = df.drop_duplicates(subset=["title","content",'momentum'], keep=False)
+    df.to_csv(MOREOVER, index = False, encoding='utf-8', sep = ";")
+
+    df = read_data(2)
+    df = df[df.momentum.notnull()]
+    df = df.fillna("")
+    df = df.drop_duplicates(subset=["title","content",'momentum'], keep=False)
+    df.to_csv(COMBINED, index = False, encoding='utf-8', sep = ";")
+
 def get_data(feature_count = 10000,choice = 1):
     df = read_data(choice)
     df = df[df.momentum.notnull()]
     df = df.fillna("")
-    x_train, x_test, y_train, y_test = split_data(df)
 
     field1 = "header_text" if choice == 0 else "title"
+    field2 = "body_text" if choice == 0 else "content"
+
+    x_train, x_test, y_train, y_test = split_data(df)
 
     v1_train, v1_test = vectorize_text(x_train[field1],
                                      x_test[field1],feature_count)
-
-    field1 = "body_text" if choice == 0 else "content"
-    v2_train, v2_test = vectorize_text(x_train[field1],
-                                     x_test[field1],feature_count)
+    v2_train, v2_test = vectorize_text(x_train[field2],
+                                     x_test[field2],feature_count)
 
     x_train = pd.concat([v1_train,v2_train], axis = 1, ignore_index = True)
     x_test = pd.concat([v1_test, v2_test], axis = 1, ignore_index = True)
-    print "Total feature count:",x_train.shape[-1]
 
     return x_train, x_test, y_train, y_test
+
+if __name__ == '__main__':
+    remove_duplicates()

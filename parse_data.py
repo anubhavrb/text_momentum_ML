@@ -18,8 +18,8 @@ def extract_match_moreover(raw_xmls,momentum_map,output,index):
                 matches.append(row)
     output.append(matches)
     print "Process #%2d is Done! Found %d matches" % (index,len(matches))
-    return 
-    
+    return
+
 
 def get_files_in(dir):
     files = os.listdir(dir)
@@ -41,7 +41,7 @@ def get_moreover_articles(base = './data/moreover', threadCount = 8):
     for zip_file in files:
         with G.open(base+'/'+zip_file) as file_ref:
             raw_xmls.append(file_ref.read())
-    print "Done. Total time taken: %.4f sec" % (time.time()-start)        
+    print "Done. Total time taken: %.4f sec" % (time.time()-start)
     processes = []
     load = len(raw_xmls)/threadCount
     print "Load size: ",load
@@ -52,21 +52,21 @@ def get_moreover_articles(base = './data/moreover', threadCount = 8):
                          args = (raw_xmls[i*load : (i+1)*load],momentum_map,output,i))
             processes.append(p)
             p.start()
-            
-            
+
+
         processes.append(mp.Process(target = extract_match_moreover,
                         args = (raw_xmls[threadCount*load : ],momentum_map,output,threadCount)))
         processes[-1].start()
-        
+
         # Wait for all to finish
         for p in processes:
             p.join()
-            
+
         # compile final data
         matched_articles = []
         for i in range(threadCount+1):
                 matched_articles += output[i]
-        
+
     df = pd.DataFrame(matched_articles,
         columns=['title', 'content', 'author_name', 'source_name', 'momentum'])
     print df.describe()
@@ -116,6 +116,18 @@ def get_opoint_articles(base = './data/opoint'):
     df.to_csv('./data/opoint.csv', index = False, encoding='utf-8', sep = ";")
     return df
 
+def combine_data():
+    MOREOVER = "./data/moreover.csv"
+    OPOINT = "./data/opoint.csv"
+    df1 = pd.read_csv(MOREOVER, sep = ';')
+    df2 = pd.read_csv(OPOINT, sep = ';')
+    df1 = df1[['title','content','momentum']]
+    df2 = df2[['header_text','body_text','momentum']]
+    df2.columns = df1.columns
+    df = pd.concat([df1,df2], axis=0, ignore_index=True)
+    df.to_csv('./data/combined.csv', index = False, encoding='utf-8', sep = ";")
+
 if __name__ == '__main__':
-    get_opoint_articles()
+    #get_opoint_articles()
     #get_moreover_articles(threadCount = int(sys.argv[1]))
+    combine_data()
