@@ -36,7 +36,7 @@ def tune_params(feature_count):
     clf.fit(X_train, y_train)
     r2 = clf.score(X_test,y_test)
 
-    print "\tBest result from Tunning: %d, %.5f, %.5f" % (k,r2)
+    print "\tBest result from Tunning: %d features, score of %.5f" % (X_train.shape[-1],r2)
     print clf.best_params_
 
 if __name__ == "__main__":
