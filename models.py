@@ -1,3 +1,4 @@
+import sys
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.svm import SVR
@@ -10,11 +11,11 @@ from sklearn.ensemble import BaggingRegressor as BAG
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsRegressor
 
-def run_model():
-    x_train, x_test, y_train, y_test = get_data(10000)
+def run_model(data_choice, feature_count):
+    x_train, x_test, y_train, y_test = get_data(feature_count,data_choice)
     clf = DecisionTreeRegressor()
     clf.fit(x_train, y_train)
     print clf.score(x_test, y_test)
 
 if __name__ == "__main__":
-    run_model()
+    run_model(int(sys.argv[1]), int(sys.argv[2]))
